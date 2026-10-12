@@ -1,0 +1,1815 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MedicareX — Complete Smart Medicine Management System</title>
+  <meta name="description" content="MedicareX is a self-contained, offline-first smart medicine management system supporting 22 Indian languages and ESP32 IoT simulation without Firebase.">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='25' fill='%230284C7'/><path d='M30 50h40M50 30v40' stroke='white' stroke-width='12' stroke-linecap='round'/></svg>">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdfa',
+              100: '#ccfbf1',
+              200: '#99f6e4',
+              500: '#14b8a6',
+              600: '#0d9488',
+              700: '#0f766e',
+              800: '#115e59',
+              900: '#134e4a',
+              950: '#042f2e'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Chart.js CDN for interactive visual analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white">
+
+  <!-- TOP HEADER / NAVBAR -->
+  <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-30 shadow-sm print:hidden transition-colors">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+      <div class="flex justify-between h-16 items-center gap-2">
+        
+        <!-- Logo & Title -->
+        <div class="flex items-center space-x-2.5 sm:space-x-3 cursor-pointer shrink-0" onclick="app.switchTab('home')">
+          <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-brand-700 to-sky-500 flex items-center justify-center text-white shadow-md shadow-brand-500/20 shrink-0">
+            <i data-lucide="pill-bottle" class="w-5 h-5 sm:w-6 sm:h-6"></i>
+          </div>
+          <div class="min-w-0">
+            <div class="flex items-center space-x-2">
+              <span class="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900 dark:text-white whitespace-nowrap">Medicare<span class="text-brand-600 dark:text-brand-400">X</span></span>
+              <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 whitespace-nowrap">
+                <i data-lucide="shield-check" class="w-3 h-3 mr-1"></i> No Firebase • 100% Local
+              </span>
+            </div>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:block">Smart Medicine Management & IoT Prototype</p>
+          </div>
+        </div>
+
+        <!-- Header Controls: 22 Indian Languages, Theme, User Chip, Quick Add -->
+        <div class="flex items-center space-x-1 sm:space-x-2.5 shrink-0">
+          
+          <!-- 22 Official Scheduled Indian Languages Dropdown -->
+          <div class="relative flex items-center">
+            <i data-lucide="globe" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-600 dark:text-brand-400 absolute left-2 sm:left-2.5 pointer-events-none"></i>
+            <select id="lang-selector" onchange="app.setLanguage(this.value)" class="bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 text-slate-800 dark:text-slate-100 text-xs font-semibold rounded-xl pl-7 sm:pl-8 pr-2 sm:pr-3 py-1.5 sm:py-2 max-w-[100px] sm:max-w-[160px] truncate focus:ring-2 focus:ring-brand-500 focus:outline-none transition cursor-pointer shadow-sm">
+              <!-- Dynamically populated from translations.js -->
+            </select>
+          </div>
+
+          <!-- Light / Dark Mode Toggle -->
+          <button id="theme-toggle-btn" onclick="app.toggleTheme()" title="Toggle Dark/Light Mode" class="p-1.5 sm:p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+            <i data-lucide="moon" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+          </button>
+
+          <!-- Notification Center Bell -->
+          <button onclick="app.switchTab('notifications')" title="Notifications" class="p-1.5 sm:p-2 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition relative">
+            <i data-lucide="bell" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+            <span class="absolute top-1 right-1 w-2 h-2 bg-brand-500 rounded-full animate-ping"></span>
+            <span class="absolute top-1 right-1 w-2 h-2 bg-brand-600 rounded-full"></span>
+          </button>
+
+          <!-- Demo Persona Chip -->
+          <button onclick="app.switchTab('auth')" title="Switch Persona / Demo Profile" class="hidden md:flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 text-xs font-semibold text-slate-700 dark:text-slate-200 transition">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span id="auth-header-name">Eleanor Vance</span>
+            <span class="text-[10px] text-slate-400 uppercase font-mono">Demo</span>
+          </button>
+
+          <!-- Quick Add Medication Button -->
+          <button onclick="app.openModal('add-med-modal')" class="hidden sm:inline-flex items-center space-x-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-3.5 py-2 rounded-xl shadow-sm transition">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span data-i18n="add_med">Add Med</span>
+          </button>
+
+          <!-- Mobile Hamburger Drawer Button -->
+          <button onclick="app.toggleMobileDrawer()" class="md:hidden p-1.5 sm:p-2 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition" aria-label="Open Navigation Menu">
+            <i data-lucide="menu" class="w-5 h-5 sm:w-6 sm:h-6"></i>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- Informative Demo Mode Banner -->
+  <div class="bg-slate-900 text-slate-300 text-[11px] sm:text-xs py-1.5 px-3 sm:px-4 text-center flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 print:hidden border-b border-slate-800">
+    <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-brand-400 shrink-0"></i>
+    <span><strong>DEMO MODE:</strong> All features persist locally in localStorage. Zero cloud telemetry. Emergency Vault test PIN: <code class="bg-slate-800 text-white px-1.5 py-0.5 rounded font-mono font-bold">1234</code></span>
+  </div>
+
+  <!-- APPLICATION BODY WITH SIDEBAR & MAIN CONTENT -->
+  <div class="flex-grow flex max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 gap-4 sm:gap-6">
+
+    <!-- DESKTOP SIDEBAR NAVIGATION (14 Sections) -->
+    <aside id="sidebar" class="hidden md:flex flex-col w-64 shrink-0 space-y-1 print:hidden">
+      <div class="p-3 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-1">
+        
+        <p class="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Navigation</p>
+        
+        <button onclick="app.switchTab('home')" data-tab="home" class="nav-sidebar-btn w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition">
+          <i data-lucide="home" class="w-4 h-4 text-sky-500"></i>
+          <span data-i18n="nav_home">Home / Landing</span>
+        </button>
+
+        <button onclick="app.switchTab('dashboard')" data-tab="dashboard" class="nav-sidebar-btn w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition">
+          <i data-lucide="layout-dashboard" class="w-4 h-4 text-brand-600"></i>
+          <span data-i18n="nav_dashboard">Main Dashboard</span>
+        </button>
+
+        <button onclick="app.switchTab('medications')" data-tab="medications" class="nav-sidebar-btn w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition">
+          <i data-lucide="pill" class="w-4 h-4 text-purple-500"></i>
+          <span data-i18n="nav_medications">Medicine Manager</span>
+        </button>
+
+        <button onclick="app.switchTab('medinfo')" data-tab="medinfo" class="nav-sidebar-btn w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition">
+          <i data-lucide="book-open-check" class="w-4 h-4 text-emerald-500"></i>
+          <span data-i18n="nav_medinfo">Medicine Information</span>
+        </button>
+
+        <button onclick="app.switchTab('schedule')" data-tab="schedule" class="nav-sidebar-btn w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition">
+          <i data-lucide="calendar-clock" class="w-4 h-4 text-blue-500"></i>
+          <span data-i18n="nav_schedule">Schedule & Doses</span>
+        </button>
+
+        <button onclick="app.switchTab('history')" data-tab="history" class="nav-sidebar-btn w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition">
+          <i data-lucide="history" class="w-4 h-4 text-indigo-500"></i>
+          <span data-i18n="nav_history">Dose History</span>
+        </button>
+
+        <button onclick="app.switchTab('report')" data-tab="report" class="nav-sidebar-btn w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition">
+          <i data-lucide="sparkles" class="w-4 h-4 text-amber-500"></i>
+          <span data-i18n="nav_report">AI Report Generator</span>
+        </button>
+
+        <p class="px-3 pt-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Advanced Portals</p>
+
+        <button onclick="app.switchTab('emergency')" data-tab="emergency" class="nav-sidebar-btn w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition">
+          <i data-lucide="shield-alert" class="w-4 h-4 text-rose-500"></i>
+          <span data-i18n="nav_emergency">Emergency Vault</span>
+        </button>
+
+        <button onclick="app.switchTab('caregiver')" data-tab="caregiver" class="nav-sidebar-btn w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition">
+          <i data-lucide="users" class="w-4 h-4 text-teal-500"></i>
+          <span data-i18n="nav_caregiver">Caregiver View</span>
+        </button>
+
+        <button onclick="app.switchTab('iot')" data-tab="iot" class="nav-sidebar-btn w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition">
+          <i data-lucide="cpu" class="w-4 h-4 text-cyan-500"></i>
+          <span data-i18n="nav_iot">Smart Box IoT</span>
+        </button>
+
+        <button onclick="app.switchTab('analytics')" data-tab="analytics" class="nav-sidebar-btn w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition">
+          <i data-lucide="bar-chart-3" class="w-4 h-4 text-orange-500"></i>
+          <span data-i18n="nav_analytics">Analytics & Trends</span>
+        </button>
+
+        <p class="px-3 pt-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">System</p>
+
+        <button onclick="app.switchTab('notifications')" data-tab="notifications" class="nav-sidebar-btn w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition">
+          <i data-lucide="bell" class="w-4 h-4 text-yellow-500"></i>
+          <span data-i18n="nav_notifications">Notifications</span>
+        </button>
+
+        <button onclick="app.switchTab('auth')" data-tab="auth" class="nav-sidebar-btn w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition">
+          <i data-lucide="user-check" class="w-4 h-4 text-slate-500"></i>
+          <span data-i18n="nav_auth">Demo Login / Auth</span>
+        </button>
+
+        <button onclick="app.switchTab('settings')" data-tab="settings" class="nav-sidebar-btn w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center space-x-3 transition">
+          <i data-lucide="settings" class="w-4 h-4 text-slate-500"></i>
+          <span data-i18n="nav_settings">User Settings</span>
+        </button>
+
+      </div>
+    </aside>
+
+    <!-- MOBILE DRAWER MODAL OVERLAY -->
+    <div id="mobile-drawer" onclick="if(event.target === this) app.closeMobileDrawer()" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden md:hidden flex justify-end">
+      <div class="mobile-drawer-content bg-white dark:bg-slate-800 w-80 max-w-[85vw] h-full p-5 shadow-2xl flex flex-col justify-between overflow-y-auto">
+        <div class="space-y-4">
+          <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-3">
+            <div class="flex items-center space-x-2.5">
+              <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-700 to-sky-500 flex items-center justify-center text-white shadow-sm">
+                <i data-lucide="pill-bottle" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <span class="text-base font-bold text-slate-900 dark:text-white">Medicare<span class="text-brand-600 dark:text-brand-400">X</span></span>
+                <span class="text-[10px] text-slate-400 block font-medium">All 14 Navigation Portals</span>
+              </div>
+            </div>
+            <button onclick="app.closeMobileDrawer()" class="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700" aria-label="Close menu">
+              <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+          </div>
+
+          <nav class="space-y-1 text-xs font-semibold">
+            <p class="px-3 pt-1 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Clinical Core</p>
+
+            <button onclick="app.switchTab('home')" data-tab="home" class="drawer-nav-btn w-full text-left px-3 py-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center space-x-3 transition">
+              <i data-lucide="home" class="w-4 h-4 text-sky-500"></i><span data-i18n="nav_home">Home / Landing</span>
+            </button>
+            <button onclick="app.switchTab('dashboard')" data-tab="dashboard" class="drawer-nav-btn w-full text-left px-3 py-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center space-x-3 transition">
+              <i data-lucide="layout-dashboard" class="w-4 h-4 text-brand-600"></i><span data-i18n="nav_dashboard">Main Dashboard</span>
+            </button>
+            <button onclick="app.switchTab('medications')" data-tab="medications" class="drawer-nav-btn w-full text-left px-3 py-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center space-x-3 transition">
+              <i data-lucide="pill" class="w-4 h-4 text-purple-500"></i><span data-i18n="nav_medications">Medicine Manager</span>
+            </button>
+            <button onclick="app.switchTab('medinfo')" data-tab="medinfo" class="drawer-nav-btn w-full text-left px-3 py-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center space-x-3 transition">
+              <i data-lucide="book-open-check" class="w-4 h-4 text-emerald-500"></i><span data-i18n="nav_medinfo">Medicine Information</span>
+            </button>
+            <button onclick="app.switchTab('schedule')" data-tab="schedule" class="drawer-nav-btn w-full text-left px-3 py-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center space-x-3 transition">
+              <i data-lucide="calendar-clock" class="w-4 h-4 text-blue-500"></i><span data-i18n="nav_schedule">Schedule & Doses</span>
+            </button>
+            <button onclick="app.switchTab('history')" data-tab="history" class="drawer-nav-btn w-full text-left px-3 py-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center space-x-3 transition">
+              <i data-lucide="history" class="w-4 h-4 text-indigo-500"></i><span data-i18n="nav_history">Dose History</span>
+            </button>
+            <button onclick="app.switchTab('report')" data-tab="report" class="drawer-nav-btn w-full text-left px-3 py-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center space-x-3 transition">
+              <i data-lucide="sparkles" class="w-4 h-4 text-amber-500"></i><span data-i18n="nav_report">AI Report Generator</span>
+            </button>
+
+            <p class="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Advanced Portals</p>
+
+            <button onclick="app.switchTab('emergency')" data-tab="emergency" class="drawer-nav-btn w-full text-left px-3 py-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center space-x-3 transition">
+              <i data-lucide="shield-alert" class="w-4 h-4 text-rose-500"></i><span data-i18n="nav_emergency">Emergency Vault</span>
+            </button>
+            <button onclick="app.switchTab('caregiver')" data-tab="caregiver" class="drawer-nav-btn w-full text-left px-3 py-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center space-x-3 transition">
+              <i data-lucide="users" class="w-4 h-4 text-teal-500"></i><span data-i18n="nav_caregiver">Caregiver View</span>
+            </button>
+            <button onclick="app.switchTab('iot')" data-tab="iot" class="drawer-nav-btn w-full text-left px-3 py-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center space-x-3 transition">
+              <i data-lucide="cpu" class="w-4 h-4 text-cyan-500"></i><span data-i18n="nav_iot">Smart Box IoT</span>
+            </button>
+            <button onclick="app.switchTab('analytics')" data-tab="analytics" class="drawer-nav-btn w-full text-left px-3 py-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center space-x-3 transition">
+              <i data-lucide="bar-chart-3" class="w-4 h-4 text-orange-500"></i><span data-i18n="nav_analytics">Analytics & Trends</span>
+            </button>
+
+            <p class="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">System</p>
+
+            <button onclick="app.switchTab('notifications')" data-tab="notifications" class="drawer-nav-btn w-full text-left px-3 py-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center space-x-3 transition">
+              <i data-lucide="bell" class="w-4 h-4 text-yellow-500"></i><span data-i18n="nav_notifications">Notifications</span>
+            </button>
+            <button onclick="app.switchTab('auth')" data-tab="auth" class="drawer-nav-btn w-full text-left px-3 py-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center space-x-3 transition">
+              <i data-lucide="user-check" class="w-4 h-4 text-slate-500"></i><span data-i18n="nav_auth">Demo Login / Auth</span>
+            </button>
+            <button onclick="app.switchTab('settings')" data-tab="settings" class="drawer-nav-btn w-full text-left px-3 py-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center space-x-3 transition">
+              <i data-lucide="settings" class="w-4 h-4 text-slate-500"></i><span data-i18n="nav_settings">User Settings</span>
+            </button>
+          </nav>
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 dark:border-slate-700 text-[11px] text-slate-400 flex items-center justify-between">
+          <span>MedicareX • 100% Offline</span>
+          <span class="font-mono text-[10px] bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 px-1.5 py-0.5 rounded">v2.0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN VIEW CONTAINER -->
+    <main class="flex-grow w-full pb-20 md:pb-8">
+
+      <!-- ======================================================== -->
+      <!-- 1. HOME / LANDING PAGE -->
+      <!-- ======================================================== -->
+      <section id="view-home" class="tab-content space-y-8">
+        
+        <!-- Hero Section -->
+        <div class="bg-gradient-to-br from-slate-900 via-brand-900 to-sky-950 rounded-3xl p-8 sm:p-12 text-white shadow-xl relative overflow-hidden">
+          <div class="absolute -right-12 -bottom-12 opacity-10 pointer-events-none">
+            <i data-lucide="heart-pulse" class="w-96 h-96 text-white"></i>
+          </div>
+
+          <div class="relative z-10 max-w-2xl space-y-4">
+            <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-brand-500/20 border border-brand-400/30 text-brand-300 text-xs font-bold tracking-wide uppercase">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+              <span>Next-Gen Medical Companion</span>
+            </div>
+
+            <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight">
+              Smarter Medication. <br><span class="text-brand-400">Better Patient Care.</span>
+            </h1>
+
+            <p class="text-sm sm:text-base text-slate-300 leading-relaxed">
+              MedicareX combines clinical dose scheduling, PIN-protected emergency profiles, offline AI clinical reports, and a simulated <strong>ESP32 Smart Medicine Box</strong> — completely local, with zero Firebase dependencies and native support for all <strong>22 Scheduled Indian Languages</strong>.
+            </p>
+
+            <div class="flex flex-wrap gap-3 pt-2">
+              <button onclick="app.switchTab('dashboard')" class="bg-brand-500 hover:bg-brand-600 text-white font-bold px-6 py-3 rounded-xl shadow-lg shadow-brand-500/20 transition flex items-center space-x-2 text-sm">
+                <i data-lucide="play" class="w-4 h-4"></i>
+                <span>Open Interactive Demo</span>
+              </button>
+              <button onclick="app.switchTab('iot')" class="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white font-semibold px-5 py-3 rounded-xl border border-white/15 transition flex items-center space-x-2 text-sm">
+                <i data-lucide="cpu" class="w-4 h-4 text-cyan-400"></i>
+                <span>Smart Box IoT Simulator</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4 Pillars Feature Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-2">
+            <div class="w-10 h-10 rounded-xl bg-sky-50 dark:bg-sky-950 text-sky-600 dark:text-sky-400 flex items-center justify-center font-bold">
+              <i data-lucide="cpu" class="w-5 h-5"></i>
+            </div>
+            <h3 class="font-bold text-slate-900 dark:text-white text-sm">ESP32 Smart Medicine Box</h3>
+            <p class="text-xs text-slate-500 leading-relaxed">Simulates optical fingerprint sensor (R307), 16x2 LCD display, servo lock & buzzer.</p>
+          </div>
+
+          <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-2">
+            <div class="w-10 h-10 rounded-xl bg-brand-50 dark:bg-brand-950 text-brand-600 dark:text-brand-400 flex items-center justify-center font-bold">
+              <i data-lucide="globe-2" class="w-5 h-5"></i>
+            </div>
+            <h3 class="font-bold text-slate-900 dark:text-white text-sm">22 Indian Languages</h3>
+            <p class="text-xs text-slate-500 leading-relaxed">Official Eighth Schedule languages with native scripts and RTL support for Urdu, Kashmiri & Sindhi.</p>
+          </div>
+
+          <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-2">
+            <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
+              <i data-lucide="sparkles" class="w-5 h-5"></i>
+            </div>
+            <h3 class="font-bold text-slate-900 dark:text-white text-sm">Local AI Report Engine</h3>
+            <p class="text-xs text-slate-500 leading-relaxed">Transparent algorithmic pattern analysis and adherence summaries with PDF/CSV export.</p>
+          </div>
+
+          <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-2">
+            <div class="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold">
+              <i data-lucide="shield-check" class="w-5 h-5"></i>
+            </div>
+            <h3 class="font-bold text-slate-900 dark:text-white text-sm">Emergency Vault</h3>
+            <p class="text-xs text-slate-500 leading-relaxed">PIN-protected access to critical dosages, blood type, drug allergies, and physician contacts.</p>
+          </div>
+        </div>
+
+        <!-- Privacy & Offline Guarantee Box -->
+        <div class="bg-emerald-50/70 dark:bg-emerald-950/40 p-6 rounded-2xl border border-emerald-200 dark:border-emerald-900 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div class="flex items-start space-x-3.5">
+            <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 flex items-center justify-center shrink-0">
+              <i data-lucide="lock" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h3 class="font-bold text-emerald-900 dark:text-emerald-200 text-sm">Zero Firebase • 100% Client-Side Privacy</h3>
+              <p class="text-xs text-emerald-800/80 dark:text-emerald-300/80 mt-1 leading-relaxed">No telemetry or remote databases are used. All demo data resides strictly within your web browser's localStorage for complete testing privacy.</p>
+            </div>
+          </div>
+          <button onclick="app.switchTab('dashboard')" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-4 py-2.5 rounded-xl shrink-0 transition">
+            Launch Dashboard
+          </button>
+        </div>
+
+      </section>
+
+      <!-- ======================================================== -->
+      <!-- 2. DEMO LOGIN & AUTH VIEW -->
+      <!-- ======================================================== -->
+      <section id="view-auth" class="tab-content hidden space-y-6">
+        <div class="max-w-xl mx-auto bg-white dark:bg-slate-800 p-8 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-6">
+          <div class="text-center space-y-1">
+            <div class="w-12 h-12 bg-brand-50 dark:bg-brand-950 text-brand-600 rounded-full flex items-center justify-center mx-auto">
+              <i data-lucide="user-check" class="w-6 h-6"></i>
+            </div>
+            <h2 class="text-xl font-bold text-slate-900 dark:text-white">Demo Authentication & Personas</h2>
+            <p class="text-xs text-slate-500">Switch between pre-configured fictional demo personas or update your client profile.</p>
+          </div>
+
+          <!-- Persona Switcher -->
+          <div class="space-y-2">
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">Quick Persona Switcher:</label>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+              <button onclick="app.switchPersona('Eleanor Vance', 'eleanor.vance@medicarex.demo', 'Patient')" class="p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-brand-500 text-left bg-slate-50 dark:bg-slate-900 transition">
+                <span class="font-bold block text-slate-900 dark:text-white">Eleanor Vance</span>
+                <span class="text-[10px] text-slate-500">Patient (Default)</span>
+              </button>
+              <button onclick="app.switchPersona('Priya Vance', 'priya.vance@caregiver.demo', 'Caregiver')" class="p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-brand-500 text-left bg-slate-50 dark:bg-slate-900 transition">
+                <span class="font-bold block text-slate-900 dark:text-white">Priya Vance</span>
+                <span class="text-[10px] text-slate-500">Caregiver</span>
+              </button>
+              <button onclick="app.switchPersona('Dr. Sarah Jenkins', 's.jenkins@cardio.demo', 'Physician')" class="p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-brand-500 text-left bg-slate-50 dark:bg-slate-900 transition">
+                <span class="font-bold block text-slate-900 dark:text-white">Dr. S. Jenkins</span>
+                <span class="text-[10px] text-slate-500">Attending Physician</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Profile Form -->
+          <form onsubmit="app.saveAuthProfile(event)" class="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Full Name</label>
+              <input type="text" id="auth-form-name" required class="w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2 text-xs">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Email Address</label>
+              <input type="email" id="auth-form-email" required class="w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2 text-xs">
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Role</label>
+                <select id="auth-form-role" class="w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3 py-2 text-xs">
+                  <option value="Patient">Patient</option>
+                  <option value="Caregiver">Caregiver</option>
+                  <option value="Physician">Physician / Doctor</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Phone</label>
+                <input type="text" id="auth-form-phone" class="w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2 text-xs">
+              </div>
+            </div>
+
+            <div class="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 text-[11px] text-amber-800 dark:text-amber-300">
+              <strong>Notice:</strong> This is mock client authentication for testing. Real passwords or sensitive credentials should not be stored in localStorage.
+            </div>
+
+            <button type="submit" class="w-full py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow-sm transition">
+              Save Profile Changes
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <!-- ======================================================== -->
+      <!-- 3. MAIN DASHBOARD VIEW -->
+      <!-- ======================================================== -->
+      <section id="view-dashboard" class="tab-content hidden space-y-6">
+        
+        <!-- Welcome Banner & Quick Stats -->
+        <div class="bg-gradient-to-r from-slate-900 via-brand-900 to-slate-900 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
+          <div class="absolute -right-10 -bottom-10 opacity-10 pointer-events-none">
+            <i data-lucide="heart-pulse" class="w-64 h-64 text-white"></i>
+          </div>
+
+          <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div>
+              <div class="flex items-center space-x-2 text-brand-300 text-xs font-semibold tracking-wider uppercase mb-1">
+                <i data-lucide="sun" class="w-4 h-4"></i>
+                <span id="dash-greeting-time" data-i18n="greeting_morning">Good Morning</span>
+              </div>
+              <h1 class="text-2xl sm:text-3xl font-bold tracking-tight" data-i18n="dash_title">Today's Medication Overview</h1>
+              <p class="text-slate-300 text-xs mt-1">Smarter schedule compliance with Smart Box hardware synchronization.</p>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-3">
+              <span id="dash-box-status" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                ESP32 Connected
+              </span>
+              <button onclick="app.switchTab('history')" class="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white text-xs font-medium px-4 py-2.5 rounded-xl transition flex items-center space-x-2 border border-white/10">
+                <i data-lucide="calendar" class="w-4 h-4 text-brand-400"></i>
+                <span data-i18n="view_full_log">View Full Log</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Quick Stats Cards Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-6 pt-6 border-t border-white/10">
+            <div class="bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-white/10">
+              <div class="flex items-center justify-between text-slate-400 text-xs">
+                <span data-i18n="stat_today_progress">Today's Progress</span>
+                <i data-lucide="check-circle-2" class="w-4 h-4 text-brand-400"></i>
+              </div>
+              <div class="mt-2 flex items-baseline justify-between">
+                <span class="text-2xl font-bold" id="stat-progress-text">0 / 0</span>
+                <span class="text-xs font-semibold text-brand-400" id="stat-progress-pct">0%</span>
+              </div>
+              <div class="w-full bg-white/10 h-1.5 rounded-full mt-2 overflow-hidden">
+                <div class="bg-brand-400 h-full rounded-full transition-all duration-500" id="stat-progress-bar" style="width: 0%"></div>
+              </div>
+            </div>
+
+            <div class="bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-white/10">
+              <div class="flex items-center justify-between text-slate-400 text-xs">
+                <span data-i18n="stat_adherence_streak">Adherence Streak</span>
+                <i data-lucide="flame" class="w-4 h-4 text-amber-400"></i>
+              </div>
+              <div class="mt-2 flex items-baseline space-x-1">
+                <span class="text-2xl font-bold" id="stat-streak">0</span>
+                <span class="text-xs text-slate-300" data-i18n="days_active">Days Active</span>
+              </div>
+              <p class="text-[10px] text-slate-400 mt-1" data-i18n="keep_on_schedule">Keep taking on schedule!</p>
+            </div>
+
+            <div class="bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-white/10">
+              <div class="flex items-center justify-between text-slate-400 text-xs">
+                <span data-i18n="stat_next_dose">Next Dose Due</span>
+                <i data-lucide="clock" class="w-4 h-4 text-sky-400"></i>
+              </div>
+              <div class="mt-2">
+                <div class="text-base font-bold truncate text-sky-200" id="stat-next-dose-name">None</div>
+                <p class="text-xs text-slate-300" id="stat-next-dose-time">All clear for now</p>
+              </div>
+            </div>
+
+            <div class="bg-white/5 backdrop-blur-sm p-4 rounded-xl border border-white/10">
+              <div class="flex items-center justify-between text-slate-400 text-xs">
+                <span data-i18n="stat_active_meds">Active Meds</span>
+                <i data-lucide="pill" class="w-4 h-4 text-purple-400"></i>
+              </div>
+              <div class="mt-2 flex items-baseline space-x-2">
+                <span class="text-2xl font-bold" id="stat-active-meds">0</span>
+                <span class="text-xs text-slate-300" id="stat-emergency-count">0 Critical</span>
+              </div>
+              <p class="text-[10px] text-purple-300 mt-1" data-i18n="prescribed_regimen">Prescribed Regimen</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Today's Routine Doses by Slot -->
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-lg font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+              <i data-lucide="calendar-check" class="w-5 h-5 text-brand-600"></i>
+              <span data-i18n="today_dose_schedule">Today's Dose Schedule</span>
+            </h2>
+            <span class="text-xs text-slate-500" data-i18n="click_dose_hint">Click dose to toggle status</span>
+          </div>
+
+          <div id="today-schedule-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Dynamically populated daily doses by time slot -->
+          </div>
+        </div>
+
+        <!-- Quick Action Cards (4 Pillars) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
+          <div onclick="app.openModal('add-med-modal')" class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition cursor-pointer group">
+            <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-950 dark:text-brand-300 flex items-center justify-center mb-3 group-hover:bg-brand-600 group-hover:text-white transition">
+              <i data-lucide="plus-circle" class="w-5 h-5"></i>
+            </div>
+            <h3 class="font-bold text-slate-900 dark:text-white text-sm" data-i18n="add_new_med">Add New Medication</h3>
+            <p class="text-xs text-slate-500 mt-1" data-i18n="add_new_med_desc">Register name, dosage, schedule frequency, and emergency flags.</p>
+          </div>
+
+          <div onclick="app.switchTab('report')" class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition cursor-pointer group">
+            <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-300 flex items-center justify-center mb-3 group-hover:bg-amber-500 group-hover:text-white transition">
+              <i data-lucide="file-bar-chart-2" class="w-5 h-5"></i>
+            </div>
+            <h3 class="font-bold text-slate-900 dark:text-white text-sm" data-i18n="generate_report_card">Generate AI Report</h3>
+            <p class="text-xs text-slate-500 mt-1" data-i18n="generate_report_card_desc">Synthesize adherence metrics and flag missed dose trends for your doctor.</p>
+          </div>
+
+          <div onclick="app.switchTab('emergency')" class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition cursor-pointer group">
+            <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-950 dark:text-rose-300 flex items-center justify-center mb-3 group-hover:bg-rose-600 group-hover:text-white transition">
+              <i data-lucide="shield-alert" class="w-5 h-5"></i>
+            </div>
+            <h3 class="font-bold text-slate-900 dark:text-white text-sm" data-i18n="emergency_vault_card">Emergency Medical Vault</h3>
+            <p class="text-xs text-slate-500 mt-1" data-i18n="emergency_vault_card_desc">PIN-protected access to critical dosages, emergency notes, and contacts.</p>
+          </div>
+
+          <div onclick="app.switchTab('iot')" class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition cursor-pointer group">
+            <div class="w-10 h-10 rounded-xl bg-cyan-50 text-cyan-600 dark:bg-cyan-950 dark:text-cyan-300 flex items-center justify-center mb-3 group-hover:bg-cyan-600 group-hover:text-white transition">
+              <i data-lucide="cpu" class="w-5 h-5"></i>
+            </div>
+            <h3 class="font-bold text-slate-900 dark:text-white text-sm" data-i18n="open_iot_card">Smart Box IoT</h3>
+            <p class="text-xs text-slate-500 mt-1" data-i18n="open_iot_card_desc">Simulate ESP32 hardware, biometric sensor, LCD, servo lock & buzzer.</p>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ======================================================== -->
+      <!-- 4. MEDICINE MANAGEMENT VIEW -->
+      <!-- ======================================================== -->
+      <section id="view-medications" class="tab-content hidden space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+          <div>
+            <h2 class="text-xl font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+              <i data-lucide="pill" class="w-6 h-6 text-brand-600"></i>
+              <span data-i18n="meds_list_title">Prescription & Medication List</span>
+            </h2>
+            <p class="text-xs text-slate-500 mt-1" data-i18n="meds_list_desc">Manage active medications, set schedules, dosage instructions, and emergency status.</p>
+          </div>
+
+          <button onclick="app.openModal('add-med-modal')" class="bg-brand-600 hover:bg-brand-700 text-white font-semibold px-4 py-2.5 rounded-xl shadow-sm transition flex items-center justify-center space-x-2 text-xs">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span data-i18n="add_new_med_btn">Add New Medication</span>
+          </button>
+        </div>
+
+        <!-- Search & Filter Controls -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+          <div class="relative sm:col-span-2">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+            <input type="text" id="meds-search-input" oninput="app.renderMedications()" placeholder="Search medicine, generic, or category..." class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs">
+          </div>
+          <div>
+            <select id="meds-filter-status" onchange="app.renderMedications()" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs">
+              <option value="all">All Prescriptions</option>
+              <option value="active">Active Only</option>
+              <option value="completed">Completed / Discontinued</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Medications Grid -->
+        <div id="medications-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <!-- Dynamically populated medication cards -->
+        </div>
+      </section>
+
+      <!-- ======================================================== -->
+      <!-- 5. BRIEF MEDICINE INFORMATION PANEL -->
+      <!-- ======================================================== -->
+      <section id="view-medinfo" class="tab-content hidden space-y-6">
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h2 class="text-xl font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                <i data-lucide="book-open-check" class="w-6 h-6 text-brand-600"></i>
+                <span data-i18n="medinfo_title">Brief Medicine Information Panel</span>
+              </h2>
+              <p class="text-xs text-slate-500 mt-1" data-i18n="medinfo_desc">Curated educational reference for therapeutic indications, precautions, and pharmacology.</p>
+            </div>
+
+            <div class="relative w-full md:w-auto md:min-w-[260px]">
+              <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+              <input type="text" id="medinfo-search-input" oninput="app.renderMedInfoView()" placeholder="Search educational reference DB..." class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs">
+            </div>
+          </div>
+
+          <!-- Medical Disclaimer Banner (Mandatory) -->
+          <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 p-4 rounded-xl flex items-start space-x-3 text-xs text-amber-900 dark:text-amber-200">
+            <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-600 shrink-0 mt-0.5"></i>
+            <div>
+              <span class="font-bold">Medical Reference Disclaimer:</span>
+              <p class="mt-0.5 leading-relaxed" data-i18n="medinfo_disclaimer">Medicine information is for educational purposes only. Follow your prescription and consult a qualified healthcare professional for medical advice.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Educational Reference Cards Grid -->
+        <div id="medinfo-cards-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Populated from med-info-db.js -->
+        </div>
+      </section>
+
+      <!-- ======================================================== -->
+      <!-- 6. MEDICINE SCHEDULE AND REMINDERS VIEW -->
+      <!-- ======================================================== -->
+      <section id="view-schedule" class="tab-content hidden space-y-6">
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-xl font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+              <i data-lucide="calendar-clock" class="w-6 h-6 text-brand-600"></i>
+              <span>Medicine Schedule & Dose Tracking</span>
+            </h2>
+            <p class="text-xs text-slate-500 mt-1">Review scheduled times and track doses as Taken, Missed, Skipped, or Unconfirmed.</p>
+          </div>
+
+          <div class="flex items-center space-x-2">
+            <span class="text-xs font-semibold px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+              Today: <strong id="schedule-today-str">Active Schedule</strong>
+            </span>
+          </div>
+        </div>
+
+        <div id="schedule-slots-container" class="space-y-4">
+          <!-- Populated dynamically -->
+        </div>
+      </section>
+
+      <!-- ======================================================== -->
+      <!-- 7. DOSE HISTORY LOG VIEW -->
+      <!-- ======================================================== -->
+      <section id="view-history" class="tab-content hidden space-y-6">
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h2 class="text-xl font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                <i data-lucide="history" class="w-6 h-6 text-brand-600"></i>
+                <span data-i18n="history_title">Medication Dose History</span>
+              </h2>
+              <p class="text-xs text-slate-500 mt-1" data-i18n="history_desc">Track past doses taken, missed, or skipped. Fully sortable and filterable.</p>
+            </div>
+
+            <div class="flex items-center space-x-2">
+              <button onclick="app.exportHistoryCSV()" class="bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-semibold px-3.5 py-2 rounded-xl transition flex items-center space-x-1.5 border border-slate-200 dark:border-slate-600">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                <span data-i18n="export_csv_btn">Export CSV</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- History Filter Bar -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-4 border-t border-slate-100 dark:border-slate-700">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1" data-i18n="date_range_label">Date Range</label>
+              <select id="hist-filter-date" onchange="app.renderHistory()" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-xs">
+                <option value="all" data-i18n="filter_all_history">All Available History</option>
+                <option value="today" data-i18n="filter_today">Today Only</option>
+                <option value="7days" data-i18n="filter_7days">Past 7 Days</option>
+                <option value="30days" data-i18n="filter_30days">Past 30 Days</option>
+                <option value="90days" data-i18n="filter_90days">Past 90 Days</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1" data-i18n="med_filter_label">Medication Filter</label>
+              <select id="hist-filter-med" onchange="app.renderHistory()" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-xs">
+                <option value="all" data-i18n="filter_all_meds">All Medications</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1" data-i18n="status_filter_label">Dose Status</label>
+              <select id="hist-filter-status" onchange="app.renderHistory()" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-xs">
+                <option value="all" data-i18n="filter_all_statuses">All Statuses</option>
+                <option value="taken" data-i18n="filter_taken">Taken Doses</option>
+                <option value="missed" data-i18n="filter_missed">Missed Doses</option>
+                <option value="skipped" data-i18n="filter_skipped">Skipped Doses</option>
+                <option value="unconfirmed" data-i18n="filter_unconfirmed">Unconfirmed Doses</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1" data-i18n="sort_order_label">Sort Order</label>
+              <select id="hist-sort" onchange="app.renderHistory()" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-xs">
+                <option value="date-desc" data-i18n="sort_newest">Date (Newest First)</option>
+                <option value="date-asc" data-i18n="sort_oldest">Date (Oldest First)</option>
+                <option value="name-asc" data-i18n="sort_name_asc">Medication Name (A-Z)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- History Table -->
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="bg-slate-50 dark:bg-slate-900 text-slate-500 uppercase tracking-wider font-semibold border-b border-slate-200 dark:border-slate-700">
+                  <th class="py-3 px-4" data-i18n="th_datetime">Date</th>
+                  <th class="py-3 px-4" data-i18n="th_medication">Medication</th>
+                  <th class="py-3 px-4" data-i18n="th_dosage">Dosage</th>
+                  <th class="py-3 px-4" data-i18n="th_slot">Slot</th>
+                  <th class="py-3 px-4" data-i18n="th_status">Status</th>
+                  <th class="py-3 px-4" data-i18n="th_notes">Notes</th>
+                  <th class="py-3 px-4 text-right" data-i18n="th_actions">Action</th>
+                </tr>
+              </thead>
+              <tbody id="history-table-body" class="divide-y divide-slate-100 dark:divide-slate-700">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+          <div id="history-empty-state" class="hidden p-12 text-center">
+            <i data-lucide="inbox" class="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3"></i>
+            <p class="text-slate-600 dark:text-slate-300 font-semibold" data-i18n="no_history_title">No dose history found matching filters</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================================================== -->
+      <!-- 8. AI-STYLE REPORT GENERATOR VIEW -->
+      <!-- ======================================================== -->
+      <section id="view-report" class="tab-content hidden space-y-6">
+        
+        <!-- Toolbar -->
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
+          <div>
+            <h2 class="text-xl font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+              <i data-lucide="sparkles" class="w-6 h-6 text-amber-500"></i>
+              <span data-i18n="rpt_title">MedicareX Local AI Report Generator</span>
+            </h2>
+            <p class="text-xs text-slate-500 mt-1" data-i18n="rpt_desc">Synthesizes historical dose adherence, detects missed patterns, and formats a shareable report.</p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-3">
+            <select id="report-timeframe" onchange="app.generateReport()" class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200">
+              <option value="7" data-i18n="filter_7days">Past 7 Days</option>
+              <option value="30" selected data-i18n="filter_30days">Past 30 Days</option>
+              <option value="90" data-i18n="filter_90days">Past 90 Days</option>
+              <option value="all" data-i18n="filter_all_time">All Time</option>
+            </select>
+
+            <button onclick="app.generateReport()" class="bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-4 py-2 rounded-xl transition flex items-center space-x-1.5 shadow-sm">
+              <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+              <span data-i18n="rpt_regenerate_btn">Re-Generate</span>
+            </button>
+
+            <button onclick="app.exportReportCSV()" class="bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-semibold px-3.5 py-2 rounded-xl transition flex items-center space-x-1.5 border border-slate-200 dark:border-slate-600">
+              <i data-lucide="download" class="w-4 h-4"></i>
+              <span>Export CSV</span>
+            </button>
+
+            <button onclick="app.printReport()" class="bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-4 py-2 rounded-xl transition flex items-center space-x-1.5 shadow-sm">
+              <i data-lucide="printer" class="w-4 h-4"></i>
+              <span data-i18n="rpt_print_btn">Print / Save PDF</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Printable Canvas Card -->
+        <div id="report-canvas" class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-lg p-8 space-y-8 print:border-none print:shadow-none print:p-0">
+          
+          <!-- Clinical Header -->
+          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 border-b border-slate-200 dark:border-slate-700 pb-6">
+            <div>
+              <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 rounded-lg bg-brand-700 text-white flex items-center justify-center font-bold text-sm shrink-0">MX</div>
+                <h1 class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white" data-i18n="rpt_summary_title">MedicareX Clinical Adherence Summary</h1>
+              </div>
+              <p class="text-xs text-slate-500 mt-1" data-i18n="rpt_summary_subtitle">Generated via Local Algorithmic Synthesis • No External Transmission</p>
+            </div>
+
+            <div class="text-left sm:text-right text-xs text-slate-600 dark:text-slate-400 space-y-0.5 shrink-0">
+              <p><strong class="text-slate-800 dark:text-slate-200" data-i18n="rpt_lbl_date">Date Generated:</strong> <span id="rpt-gen-date">---</span></p>
+              <p><strong class="text-slate-800 dark:text-slate-200" data-i18n="rpt_lbl_timeframe">Timeframe:</strong> <span id="rpt-timeframe-label">Past 30 Days</span></p>
+              <p><strong class="text-slate-800 dark:text-slate-200" data-i18n="rpt_lbl_patient">Patient:</strong> <span id="rpt-patient-name">Eleanor Vance</span></p>
+            </div>
+          </div>
+
+          <!-- Key Metrics -->
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div class="bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+              <span class="text-xs font-semibold text-slate-500 uppercase" data-i18n="rpt_overall_adh">Overall Adherence</span>
+              <div class="text-3xl font-extrabold text-brand-700 dark:text-brand-400 mt-1" id="rpt-pct">0%</div>
+              <p class="text-[10px] text-slate-500 mt-1" data-i18n="rpt_taken_vs_sched">Taken vs Scheduled</p>
+            </div>
+
+            <div class="bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+              <span class="text-xs font-semibold text-slate-500 uppercase" data-i18n="rpt_total_taken">Total Doses Taken</span>
+              <div class="text-3xl font-extrabold text-emerald-600 mt-1" id="rpt-taken-cnt">0</div>
+              <p class="text-[10px] text-slate-500 mt-1" data-i18n="rpt_completed_succ">Completed successfully</p>
+            </div>
+
+            <div class="bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+              <span class="text-xs font-semibold text-slate-500 uppercase" data-i18n="rpt_missed_doses">Missed Doses</span>
+              <div class="text-3xl font-extrabold text-rose-600 mt-1" id="rpt-missed-cnt">0</div>
+              <p class="text-[10px] text-slate-500 mt-1" data-i18n="rpt_action_req">Action required</p>
+            </div>
+
+            <div class="bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+              <span class="text-xs font-semibold text-slate-500 uppercase" data-i18n="rpt_active_presc">Active Prescriptions</span>
+              <div class="text-3xl font-extrabold text-slate-800 dark:text-white mt-1" id="rpt-meds-cnt">0</div>
+              <p class="text-[10px] text-slate-500 mt-1" data-i18n="rpt_current_regimen">Current active regimen</p>
+            </div>
+          </div>
+
+          <!-- AI Clinical Synthesis Narrative -->
+          <div class="bg-brand-50/50 dark:bg-brand-950/30 border border-brand-200 dark:border-brand-900 p-6 rounded-2xl space-y-3">
+            <div class="flex items-center space-x-2 text-brand-800 dark:text-brand-300 font-bold text-sm">
+              <i data-lucide="bot" class="w-5 h-5 text-brand-600"></i>
+              <span data-i18n="rpt_ai_title">Local AI Clinical Summary & Pattern Analysis</span>
+            </div>
+            <div class="text-slate-700 dark:text-slate-300 text-sm leading-relaxed space-y-2" id="rpt-ai-narrative">
+              <!-- Dynamically generated AI narrative -->
+            </div>
+          </div>
+
+          <!-- Pattern Recognition & Alerts -->
+          <div class="space-y-3">
+            <h3 class="font-bold text-slate-900 dark:text-white text-base flex items-center space-x-2">
+              <i data-lucide="alert-circle" class="w-5 h-5 text-amber-500"></i>
+              <span data-i18n="rpt_alerts_title">Pattern Recognition & Clinical Alerts</span>
+            </h3>
+            <div id="rpt-alerts-container" class="space-y-2">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+
+          <!-- Active Prescriptions Regimen Table -->
+          <div class="space-y-3">
+            <h3 class="font-bold text-slate-900 dark:text-white text-base flex items-center space-x-2">
+              <i data-lucide="pill" class="w-5 h-5 text-brand-600"></i>
+              <span data-i18n="rpt_regimen_title">Prescription Regimen Summary</span>
+            </h3>
+            <div class="border border-slate-200 dark:border-slate-700 rounded-xl overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 uppercase font-semibold">
+                  <tr>
+                    <th class="p-3" data-i18n="th_med_name">Medication Name</th>
+                    <th class="p-3" data-i18n="th_dosage">Dosage</th>
+                    <th class="p-3" data-i18n="th_schedule">Schedule</th>
+                    <th class="p-3" data-i18n="th_em_tag">Emergency Tag</th>
+                    <th class="p-3" data-i18n="th_adh_rate">Adherence Rate</th>
+                  </tr>
+                </thead>
+                <tbody id="rpt-meds-table-body" class="divide-y divide-slate-100 dark:divide-slate-700">
+                  <!-- Populated dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Patient Biometrics & Vitals Log Table -->
+          <div class="space-y-3">
+            <h3 class="font-bold text-slate-900 dark:text-white text-base flex items-center space-x-2">
+              <i data-lucide="activity" class="w-5 h-5 text-rose-500"></i>
+              <span data-i18n="rpt_vitals_title">Patient Vitals & Biometrics</span>
+            </h3>
+            <div class="border border-slate-200 dark:border-slate-700 rounded-xl overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 uppercase font-semibold">
+                  <tr>
+                    <th class="p-3">Timestamp</th>
+                    <th class="p-3">Vital Sign</th>
+                    <th class="p-3">Recorded Value</th>
+                    <th class="p-3">Clinical Notes</th>
+                  </tr>
+                </thead>
+                <tbody id="rpt-vitals-table-body" class="divide-y divide-slate-100 dark:divide-slate-700">
+                  <!-- Populated dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Report Disclaimer Footer -->
+          <div class="border-t border-slate-200 dark:border-slate-700 pt-4 text-xs text-slate-400 space-y-1">
+            <p data-i18n="rpt_disclaimer">This report provides algorithmic observations for medical discussion. It does not replace clinical diagnosis or medical consultation.</p>
+            <p data-i18n="rpt_footer_2">Please share this report with your Primary Care Physician or Pharmacist.</p>
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- ======================================================== -->
+      <!-- 9. EMERGENCY MEDICAL VAULT (PIN-LOCKED) -->
+      <!-- ======================================================== -->
+      <section id="view-emergency" class="tab-content hidden space-y-6">
+        
+        <!-- LOCKED OVERLAY KEYPAD -->
+        <div id="emergency-locked-card" class="max-w-md mx-auto bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xl p-8 text-center space-y-6">
+          <div class="w-16 h-16 bg-rose-50 dark:bg-rose-950/60 border border-rose-100 dark:border-rose-900 text-rose-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
+            <i data-lucide="lock" class="w-8 h-8"></i>
+          </div>
+
+          <div>
+            <h2 class="text-2xl font-bold text-slate-900 dark:text-white" data-i18n="em_locked_title">Emergency Vault Locked</h2>
+            <p class="text-xs text-slate-500 mt-1" data-i18n="em_locked_desc">Enter your 4–6 digit Security PIN to access emergency medical data, contacts, and critical prescriptions.</p>
+          </div>
+
+          <!-- PIN Dots -->
+          <div class="flex justify-center space-x-3 py-2">
+            <div class="pin-dot w-4 h-4 rounded-full border-2 border-slate-300 dark:border-slate-600 transition-all" id="pin-dot-0"></div>
+            <div class="pin-dot w-4 h-4 rounded-full border-2 border-slate-300 dark:border-slate-600 transition-all" id="pin-dot-1"></div>
+            <div class="pin-dot w-4 h-4 rounded-full border-2 border-slate-300 dark:border-slate-600 transition-all" id="pin-dot-2"></div>
+            <div class="pin-dot w-4 h-4 rounded-full border-2 border-slate-300 dark:border-slate-600 transition-all" id="pin-dot-3"></div>
+            <div class="pin-dot w-4 h-4 rounded-full border-2 border-slate-300 dark:border-slate-600 transition-all" id="pin-dot-4"></div>
+            <div class="pin-dot w-4 h-4 rounded-full border-2 border-slate-300 dark:border-slate-600 transition-all" id="pin-dot-5"></div>
+          </div>
+
+          <!-- Error Feedback -->
+          <div id="pin-error-msg" class="text-xs font-semibold text-rose-600 min-h-[20px] transition-opacity opacity-0" data-i18n="em_pin_error">
+            Incorrect PIN. Please try again.
+          </div>
+
+          <!-- Onscreen Numeric Keypad -->
+          <div class="grid grid-cols-3 gap-3 max-w-[240px] mx-auto">
+            <button onclick="app.enterPinDigit('1')" class="pin-btn h-12 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl font-bold text-lg transition">1</button>
+            <button onclick="app.enterPinDigit('2')" class="pin-btn h-12 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl font-bold text-lg transition">2</button>
+            <button onclick="app.enterPinDigit('3')" class="pin-btn h-12 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl font-bold text-lg transition">3</button>
+            <button onclick="app.enterPinDigit('4')" class="pin-btn h-12 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl font-bold text-lg transition">4</button>
+            <button onclick="app.enterPinDigit('5')" class="pin-btn h-12 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl font-bold text-lg transition">5</button>
+            <button onclick="app.enterPinDigit('6')" class="pin-btn h-12 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl font-bold text-lg transition">6</button>
+            <button onclick="app.enterPinDigit('7')" class="pin-btn h-12 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl font-bold text-lg transition">7</button>
+            <button onclick="app.enterPinDigit('8')" class="pin-btn h-12 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl font-bold text-lg transition">8</button>
+            <button onclick="app.enterPinDigit('9')" class="pin-btn h-12 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl font-bold text-lg transition">9</button>
+            <button onclick="app.clearPin()" class="pin-btn h-12 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-xs font-semibold rounded-xl transition" data-i18n="em_clear">CLEAR</button>
+            <button onclick="app.enterPinDigit('0')" class="pin-btn h-12 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl font-bold text-lg transition">0</button>
+            <button onclick="app.backspacePin()" class="pin-btn h-12 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl flex items-center justify-center transition">
+              <i data-lucide="delete" class="w-5 h-5"></i>
+            </button>
+          </div>
+
+          <p class="text-[11px] text-slate-400"><span data-i18n="em_default_pin_hint">Default PIN for testing:</span> <code class="bg-slate-100 dark:bg-slate-700 px-1 py-0.5 rounded font-mono font-bold text-slate-700 dark:text-slate-200">1234</code></p>
+        </div>
+
+        <!-- UNLOCKED VAULT CONTENT -->
+        <div id="emergency-unlocked-card" class="hidden space-y-6">
+          
+          <!-- Banner -->
+          <div class="bg-gradient-to-r from-rose-700 via-rose-600 to-rose-800 rounded-2xl p-6 text-white shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex items-center space-x-4">
+              <div class="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
+                <i data-lucide="siren" class="w-7 h-7 text-white"></i>
+              </div>
+              <div>
+                <h2 class="text-2xl font-bold tracking-tight" data-i18n="em_profile_title">Emergency Health Profile</h2>
+                <p class="text-xs text-rose-100" data-i18n="em_profile_desc">Unlocked & ready for first responders or medical staff.</p>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+              <button onclick="app.openModal('change-pin-modal')" class="bg-white/10 hover:bg-white/20 text-white text-xs font-semibold px-3.5 py-2 rounded-xl border border-white/20 transition flex items-center space-x-1.5">
+                <i data-lucide="key-round" class="w-4 h-4"></i>
+                <span data-i18n="em_change_pin_btn">Change PIN</span>
+              </button>
+              <button onclick="app.printEmergencyCard()" class="bg-white/10 hover:bg-white/20 text-white text-xs font-semibold px-3.5 py-2 rounded-xl border border-white/20 transition flex items-center space-x-1.5">
+                <i data-lucide="printer" class="w-4 h-4"></i>
+                <span data-i18n="em_print_card">Print Card</span>
+              </button>
+              <button onclick="app.lockEmergency()" class="bg-rose-900/60 hover:bg-rose-900/80 text-white text-xs font-semibold px-3.5 py-2 rounded-xl border border-rose-400/30 transition flex items-center space-x-1.5">
+                <i data-lucide="lock" class="w-4 h-4"></i>
+                <span data-i18n="em_lock_btn">Lock Screen</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Privacy Warning (Mandatory) -->
+          <div class="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-xs text-rose-800 dark:text-rose-300 flex items-start space-x-2.5">
+            <i data-lucide="alert-octagon" class="w-4 h-4 mt-0.5 shrink-0"></i>
+            <p data-i18n="em_privacy_warning">Privacy Notice: Browser localStorage is not encrypted medical storage. Do not store sensitive personal health data.</p>
+          </div>
+
+          <!-- Vitals Cards Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+              <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-3">
+                <h3 class="font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                  <i data-lucide="user" class="w-4 h-4 text-brand-600"></i>
+                  <span data-i18n="em_vitals_title">Patient Vitals</span>
+                </h3>
+                <button onclick="app.openModal('edit-emergency-modal')" class="text-xs text-brand-600 font-bold" data-i18n="edit">Edit</button>
+              </div>
+              <div class="space-y-2.5 text-xs">
+                <div>
+                  <span class="text-slate-400 block" data-i18n="em_full_name">Full Name:</span>
+                  <span class="font-bold text-slate-800 dark:text-slate-100 text-sm" id="em-name">Eleanor Vance</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <span class="text-slate-400 block" data-i18n="em_dob">Date of Birth:</span>
+                    <span class="font-semibold text-slate-800 dark:text-slate-200" id="em-dob">1965-04-12</span>
+                  </div>
+                  <div>
+                    <span class="text-slate-400 block" data-i18n="em_blood_type">Blood Type:</span>
+                    <span class="inline-block bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 font-bold px-2 py-0.5 rounded" id="em-blood">O+</span>
+                  </div>
+                </div>
+                <div>
+                  <span class="text-slate-400 block" data-i18n="em_allergies">Known Allergies:</span>
+                  <span class="font-semibold text-rose-600 dark:text-rose-400" id="em-allergies">Penicillin, Shellfish</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+              <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-3">
+                <h3 class="font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                  <i data-lucide="phone-call" class="w-4 h-4 text-brand-600"></i>
+                  <span data-i18n="em_contacts_title">Emergency Contacts</span>
+                </h3>
+                <button onclick="app.openModal('edit-emergency-modal')" class="text-xs text-brand-600 font-bold" data-i18n="edit">Edit</button>
+              </div>
+              <div class="space-y-3 text-xs" id="em-contacts-list">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+              <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-3">
+                <h3 class="font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                  <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-500"></i>
+                  <span data-i18n="em_notes_title">Emergency Notes</span>
+                </h3>
+                <button onclick="app.openModal('edit-emergency-modal')" class="text-xs text-brand-600 font-bold" data-i18n="edit">Edit</button>
+              </div>
+              <p class="text-xs text-slate-700 dark:text-slate-300 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 p-3 rounded-xl leading-relaxed" id="em-notes-text">
+                Patient has a cardiac pacemaker implanted in 2024. Take morning Lisinopril immediately if blood pressure spikes above 140/90.
+              </p>
+            </div>
+
+          </div>
+
+          <!-- Critical Prescriptions (Emergency Tagged) -->
+          <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-3">
+              <div>
+                <h3 class="font-bold text-slate-900 dark:text-white text-base flex items-center space-x-2">
+                  <i data-lucide="shield-alert" class="w-5 h-5 text-rose-600"></i>
+                  <span data-i18n="em_critical_title">Critical Prescriptions (Emergency Tagged)</span>
+                </h3>
+                <p class="text-xs text-slate-500" data-i18n="em_critical_desc">Medications explicitly flagged for paramedic / doctor reference.</p>
+              </div>
+              <span class="text-xs bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 font-semibold px-2.5 py-1 rounded-full" id="em-critical-count-badge">0 Critical</span>
+            </div>
+
+            <div id="em-critical-meds-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- ======================================================== -->
+      <!-- 10. CAREGIVER DASHBOARD -->
+      <!-- ======================================================== -->
+      <section id="view-caregiver" class="tab-content hidden space-y-6">
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 class="text-xl font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                <i data-lucide="users" class="w-6 h-6 text-brand-600"></i>
+                <span data-i18n="cg_title">Caregiver Patient Monitoring Dashboard</span>
+              </h2>
+              <p class="text-xs text-slate-500 mt-1" data-i18n="cg_desc">Simulated multi-patient supervision portal for family caregivers and nurses.</p>
+            </div>
+
+            <div class="flex items-center space-x-2">
+              <label class="text-xs font-bold text-slate-600 dark:text-slate-400" data-i18n="cg_switch_patient">Select Patient:</label>
+              <select id="cg-patient-select" onchange="app.switchCaregiverPatient(this.value)" class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold">
+                <!-- Populated dynamically -->
+              </select>
+            </div>
+          </div>
+
+          <div class="p-3 rounded-xl bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-900 text-xs text-teal-900 dark:text-teal-200 flex items-center justify-between">
+            <span data-i18n="cg_demo_note">Simulated Caregiver Profiles • All records persist locally</span>
+            <span class="text-[10px] bg-teal-200 dark:bg-teal-900 text-teal-900 dark:text-teal-100 font-mono px-2 py-0.5 rounded font-bold">PORTAL DEMO</span>
+          </div>
+        </div>
+
+        <!-- Active Patient Overview Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-1">
+            <span class="text-slate-400 text-xs font-semibold uppercase">Supervised Patient</span>
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white" id="cg-active-name">Eleanor Vance</h3>
+            <p class="text-xs text-slate-500" id="cg-active-condition">Hypertension</p>
+          </div>
+
+          <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-1">
+            <span class="text-slate-400 text-xs font-semibold uppercase" data-i18n="cg_overall_adherence">Adherence Score</span>
+            <div class="text-2xl font-extrabold text-emerald-600" id="cg-active-adherence">94%</div>
+            <p class="text-[10px] text-slate-400">Past 30-day compliance</p>
+          </div>
+
+          <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-1">
+            <span class="text-slate-400 text-xs font-semibold uppercase" data-i18n="cg_missed_today">Missed Today</span>
+            <div class="text-2xl font-extrabold text-rose-600" id="cg-active-missed">0 Doses</div>
+            <p class="text-[10px] text-slate-400">Action items for caregiver</p>
+          </div>
+
+          <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-1">
+            <span class="text-slate-400 text-xs font-semibold uppercase">Active Prescriptions</span>
+            <div class="text-2xl font-extrabold text-slate-800 dark:text-white" id="cg-active-meds">6 Prescriptions</div>
+            <p class="text-[10px] text-slate-400">Regimen assigned</p>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ======================================================== -->
+      <!-- 11. SMART MEDICINE BOX — IOT HARDWARE DASHBOARD -->
+      <!-- ======================================================== -->
+      <section id="view-iot" class="tab-content hidden space-y-6">
+        
+        <!-- Header -->
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center space-x-2">
+              <h2 class="text-xl font-bold text-slate-900 dark:text-white" data-i18n="iot_title">Smart Medicine Box — IoT Hardware Dashboard</h2>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 font-mono">DEMO HARDWARE SIMULATOR</span>
+            </div>
+            <p class="text-xs text-slate-500 mt-1" data-i18n="iot_desc">Interactive prototype simulator for ESP32 microcontroller, R307 Fingerprint Sensor, 16x2 LCD, RTC, servo lock & piezo buzzer.</p>
+          </div>
+
+          <div class="flex items-center space-x-2">
+            <span id="iot-conn-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+              ESP32 CONNECTED
+            </span>
+          </div>
+        </div>
+
+        <!-- Virtual Hardware Rig (Interactive) -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          <!-- Column 1: 16x2 Character LCD & Audio Buzzer -->
+          <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-5">
+            <div>
+              <h3 class="font-bold text-slate-900 dark:text-white text-sm flex items-center space-x-2">
+                <i data-lucide="monitor" class="w-4 h-4 text-cyan-500"></i>
+                <span data-i18n="iot_lcd_title">16×2 Character LCD Display</span>
+              </h3>
+              <p class="text-xs text-slate-500 mt-0.5">Live character matrix display driven by I2C bus.</p>
+            </div>
+
+            <!-- Virtual 16x2 LCD Display -->
+            <div class="lcd-display-screen" id="virtual-lcd">
+              <div id="lcd-line-1">MEDICAREX V2.0</div>
+              <div id="lcd-line-2">READY • 08:00 AM</div>
+            </div>
+
+            <div class="flex gap-2">
+              <button onclick="app.simUpdateLCD()" class="flex-1 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 text-xs font-semibold rounded-xl transition">
+                Send Message to LCD
+              </button>
+            </div>
+
+            <!-- Virtual Piezo Buzzer -->
+            <div class="pt-4 border-t border-slate-100 dark:border-slate-700 space-y-3">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h4 class="font-bold text-slate-900 dark:text-white text-xs flex items-center space-x-2">
+                    <i data-lucide="volume-2" id="iot-buzzer-icon" class="w-4 h-4 text-slate-500"></i>
+                    <span data-i18n="iot_buzzer_title">Piezo Buzzer Alarm</span>
+                  </h4>
+                  <p class="text-[11px] text-slate-500" id="iot-buzzer-status">STANDBY (SILENT)</p>
+                </div>
+                <button onclick="app.simTriggerBuzzer()" class="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-sm transition">
+                  Trigger Alarm
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Column 2: R307 Biometric Fingerprint Sensor -->
+          <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-5 text-center flex flex-col justify-between">
+            <div>
+              <h3 class="font-bold text-slate-900 dark:text-white text-sm flex items-center justify-center space-x-2">
+                <i data-lucide="fingerprint" class="w-4 h-4 text-sky-500"></i>
+                <span data-i18n="iot_fingerprint_title">R307 Optical Fingerprint Sensor</span>
+              </h3>
+              <p class="text-xs text-slate-500 mt-0.5">Biometric authentication module via UART serial.</p>
+            </div>
+
+            <div class="py-2 flex flex-col items-center justify-center space-y-3">
+              <div class="fingerprint-pad" id="iot-fp-pad">
+                <div class="laser-scan-bar"></div>
+                <i data-lucide="fingerprint" class="w-14 h-14 text-white opacity-80"></i>
+              </div>
+              <p class="text-xs font-bold text-slate-800 dark:text-slate-200" id="iot-fp-status">Ready to Scan</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              <button onclick="app.simScanFingerprint(true)" class="py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-sm transition">
+                Simulate Match (ID #1)
+              </button>
+              <button onclick="app.simScanFingerprint(false)" class="py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl shadow-sm transition">
+                Simulate Fail (Denied)
+              </button>
+            </div>
+          </div>
+
+          <!-- Column 3: Servo Motor Lock & Connection -->
+          <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-5 flex flex-col justify-between">
+            <div>
+              <h3 class="font-bold text-slate-900 dark:text-white text-sm flex items-center space-x-2">
+                <i data-lucide="lock" class="w-4 h-4 text-brand-600"></i>
+                <span data-i18n="iot_servo_title">Servo Compartment Lock</span>
+              </h3>
+              <p class="text-xs text-slate-500 mt-0.5">PWM angle control for pill lid door.</p>
+            </div>
+
+            <!-- Virtual Servo Motor Visualizer -->
+            <div class="p-6 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center justify-center space-y-3">
+              <div class="relative w-28 h-28 bg-slate-200 dark:bg-slate-800 rounded-full flex items-center justify-center border-4 border-slate-300 dark:border-slate-700">
+                <div class="servo-arm w-16 h-3 bg-brand-600 rounded-full absolute" id="iot-servo-arm"></div>
+                <div class="w-6 h-6 bg-slate-900 rounded-full z-10 border-2 border-white"></div>
+              </div>
+            </div>
+
+            <div class="space-y-2 text-xs">
+              <div class="flex justify-between items-center px-1">
+                <span class="text-slate-500 font-semibold">Door Status:</span>
+                <span class="font-bold text-slate-900 dark:text-white" id="iot-servo-status">LOCKED (0°)</span>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button onclick="app.simToggleServo()" class="py-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white font-bold rounded-xl transition">
+                  Toggle Servo Lid
+                </button>
+                <button onclick="app.simRecordDoseEvent()" class="py-2 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl transition">
+                  Dispense Pill
+                </button>
+              </div>
+            </div>
+
+            <!-- ESP32 Connection Control -->
+            <div class="pt-3 border-t border-slate-100 dark:border-slate-700">
+              <button onclick="app.simToggleESP32()" class="w-full py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 text-xs font-semibold rounded-xl transition">
+                Toggle ESP32 WiFi Connection
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Bottom Row: Event History & Offline Sync Queue -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
+            <div class="flex justify-between items-center">
+              <h3 class="font-bold text-slate-900 dark:text-white text-sm" data-i18n="iot_event_log">Hardware Event History</h3>
+              <button onclick="app.simClearEvents()" class="text-xs text-rose-600 font-semibold hover:underline">Clear Log</button>
+            </div>
+            <div id="iot-event-log-list" class="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+
+          <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
+            <h3 class="font-bold text-slate-900 dark:text-white text-sm" data-i18n="iot_sync_queue">Pending Offline Sync Queue</h3>
+            <p class="text-[11px] text-slate-500">Events held locally on the ESP32 to upload once cloud or gateway link is established.</p>
+            <div id="iot-sync-queue-list" class="space-y-2 max-h-48 overflow-y-auto">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ======================================================== -->
+      <!-- 12. ANALYTICS AND REPORTS VIEW -->
+      <!-- ======================================================== -->
+      <section id="view-analytics" class="tab-content hidden space-y-6">
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-xl font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+              <i data-lucide="bar-chart-3" class="w-6 h-6 text-brand-600"></i>
+              <span data-i18n="analytics_title">Adherence Analytics & Trends</span>
+            </h2>
+            <p class="text-xs text-slate-500 mt-1" data-i18n="analytics_desc">Interactive adherence graphs, dose status distributions, and medication-wise performance.</p>
+          </div>
+
+          <button onclick="app.exportHistoryCSV()" class="bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-semibold px-4 py-2 rounded-xl transition flex items-center space-x-1.5 border border-slate-200 dark:border-slate-600">
+            <i data-lucide="download" class="w-4 h-4"></i>
+            <span data-i18n="analytics_summary_export">Export Full Analytics CSV</span>
+          </button>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm lg:col-span-2 space-y-4">
+            <h3 class="font-bold text-slate-900 dark:text-white text-sm" data-i18n="analytics_daily_chart">Daily Dose Adherence Rate (%)</h3>
+            <div class="h-64 relative">
+              <canvas id="chart-daily-adherence"></canvas>
+            </div>
+          </div>
+
+          <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+            <h3 class="font-bold text-slate-900 dark:text-white text-sm" data-i18n="analytics_status_dist">Dose Status Breakdown</h3>
+            <div class="h-64 relative">
+              <canvas id="chart-status-distribution"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+          <h3 class="font-bold text-slate-900 dark:text-white text-sm" data-i18n="analytics_med_comp">Medicine-Wise Adherence Rate</h3>
+          <div class="h-64 relative">
+            <canvas id="chart-meds-comparison"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================================================== -->
+      <!-- 13. NOTIFICATION CENTRE VIEW -->
+      <!-- ======================================================== -->
+      <section id="view-notifications" class="tab-content hidden space-y-6">
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-xl font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+              <i data-lucide="bell" class="w-6 h-6 text-brand-600"></i>
+              <span data-i18n="notif_title">Reminder & Notification Centre</span>
+            </h2>
+            <p class="text-xs text-slate-500 mt-1" data-i18n="notif_desc">Review past medication alerts, dose confirmations, and simulated IoT events.</p>
+          </div>
+
+          <div class="flex items-center space-x-2">
+            <button onclick="app.requestBrowserNotifications()" class="bg-brand-50 text-brand-700 dark:bg-brand-950 dark:text-brand-300 hover:bg-brand-100 text-xs font-semibold px-3.5 py-2 rounded-xl transition border border-brand-200 dark:border-brand-900 flex items-center space-x-1.5">
+              <i data-lucide="bell-ring" class="w-4 h-4"></i>
+              <span data-i18n="notif_browser_toggle">Enable Browser Notifications</span>
+            </button>
+            <button onclick="app.markAllNotificationsRead()" class="bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-semibold px-3 py-2 rounded-xl transition" data-i18n="notif_mark_all_read">
+              Mark Read
+            </button>
+            <button onclick="app.clearAllNotifications()" class="text-rose-600 hover:text-rose-700 text-xs font-semibold px-2 py-2" data-i18n="notif_clear_all">
+              Clear All
+            </button>
+          </div>
+        </div>
+
+        <div id="notifications-list" class="space-y-3">
+          <!-- Populated dynamically -->
+        </div>
+      </section>
+
+      <!-- ======================================================== -->
+      <!-- 14. USER PROFILE AND SETTINGS VIEW -->
+      <!-- ======================================================== -->
+      <section id="view-settings" class="tab-content hidden space-y-6">
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-2">
+          <h2 class="text-xl font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+            <i data-lucide="settings" class="w-6 h-6 text-brand-600"></i>
+            <span data-i18n="settings_title">User Settings & Preferences</span>
+          </h2>
+          <p class="text-xs text-slate-500" data-i18n="settings_desc">Configure display preferences, language selection, sound alerts, and demo data.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          <!-- Language & Appearance Settings -->
+          <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-5">
+            <h3 class="font-bold text-slate-900 dark:text-white text-sm">Language & Appearance</h3>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1" data-i18n="settings_lang">Language Selection (22 Scheduled Indian Languages)</label>
+              <select id="settings-lang-select" onchange="app.setLanguage(this.value)" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs font-semibold">
+                <!-- Populated dynamically -->
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2" data-i18n="settings_theme">Color Theme</label>
+              <div class="grid grid-cols-2 gap-3 text-xs">
+                <button onclick="app.applyTheme('light')" class="p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-left bg-slate-50 hover:bg-slate-100 flex items-center space-x-2 font-semibold">
+                  <i data-lucide="sun" class="w-4 h-4 text-amber-500"></i>
+                  <span class="text-slate-800">Light Medical</span>
+                </button>
+                <button onclick="app.applyTheme('dark')" class="p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-left bg-slate-900 text-white hover:bg-slate-950 flex items-center space-x-2 font-semibold">
+                  <i data-lucide="moon" class="w-4 h-4 text-cyan-400"></i>
+                  <span>Dark Slate</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Profile Info Edit -->
+            <form onsubmit="app.saveSettingsProfile(event)" class="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+              <h4 class="font-bold text-slate-900 dark:text-white text-xs" data-i18n="settings_profile_edit">Edit User Profile</h4>
+              <div>
+                <label class="block text-[11px] text-slate-500 mb-1">Display Name</label>
+                <input type="text" id="settings-profile-name" class="w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3 py-2 text-xs">
+              </div>
+              <button type="submit" class="px-4 py-2 bg-brand-600 text-white rounded-xl text-xs font-semibold">Save Profile</button>
+            </form>
+          </div>
+
+          <!-- Demo Data Management Settings -->
+          <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+            <h3 class="font-bold text-slate-900 dark:text-white text-sm" data-i18n="settings_data_manage">Demo Data Management</h3>
+            <p class="text-xs text-slate-500">Easily load rich sample datasets, reset back to factory state, or backup your JSON data.</p>
+
+            <div class="space-y-2 pt-2">
+              <button onclick="app.loadSampleDataset()" class="w-full p-3 rounded-xl bg-brand-50 dark:bg-brand-950/40 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-900 text-xs font-bold flex items-center justify-between hover:bg-brand-100 transition">
+                <span class="flex items-center space-x-2">
+                  <i data-lucide="database" class="w-4 h-4"></i>
+                  <span data-i18n="settings_load_sample">Load Sample Dataset</span>
+                </span>
+                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+              </button>
+
+              <button onclick="app.startEmptyDataset()" class="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 text-xs font-bold flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                <span class="flex items-center space-x-2">
+                  <i data-lucide="file-minus" class="w-4 h-4"></i>
+                  <span data-i18n="settings_empty_state">Start with Empty Dataset</span>
+                </span>
+                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+              </button>
+
+              <button onclick="app.resetAllDemoData()" class="w-full p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900 text-xs font-bold flex items-center justify-between hover:bg-rose-100 transition">
+                <span class="flex items-center space-x-2">
+                  <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                  <span data-i18n="settings_reset_data">Reset Demo Data</span>
+                </span>
+                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+              </button>
+            </div>
+
+            <!-- JSON Backup / Import -->
+            <div class="pt-4 border-t border-slate-100 dark:border-slate-700 space-y-2">
+              <span class="block text-xs font-bold text-slate-700 dark:text-slate-300">Backup & Restore</span>
+              <div class="grid grid-cols-2 gap-2 text-xs">
+                <button onclick="app.exportDataJSON()" class="py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl flex items-center justify-center space-x-1.5 transition">
+                  <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                  <span data-i18n="settings_export_json">Export JSON</span>
+                </button>
+                <label class="py-2.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 font-semibold rounded-xl flex items-center justify-center space-x-1.5 transition cursor-pointer text-center">
+                  <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+                  <span data-i18n="settings_import_json">Import JSON</span>
+                  <input type="file" accept=".json" onchange="app.importDataJSON(event)" class="hidden">
+                </label>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODALS -->
+  <!-- ======================================================== -->
+
+  <!-- 1. Add / Edit Medication Modal -->
+  <div id="add-med-modal" class="modal-backdrop fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-700 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-3">
+        <h3 class="text-lg font-bold text-slate-900 dark:text-white" id="med-modal-title" data-i18n="add_new_med">Add New Medication</h3>
+        <button onclick="app.closeModal('add-med-modal')" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="med-form" onsubmit="app.saveMedication(event)" class="space-y-4">
+        <input type="hidden" id="med-form-id" value="">
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1" data-i18n="lbl_med_name">Medicine Name *</label>
+          <input type="text" id="med-form-name" required placeholder="e.g. Lisinopril, Metformin" class="w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2 text-xs">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1" data-i18n="lbl_brand_name">Brand Name</label>
+            <input type="text" id="med-form-brand" placeholder="e.g. Zestril, Glucophage" class="w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2 text-xs">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1" data-i18n="lbl_generic_name">Generic Name</label>
+            <input type="text" id="med-form-generic" placeholder="e.g. Lisinopril dihydrate" class="w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2 text-xs">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1" data-i18n="lbl_dosage">Dosage *</label>
+            <input type="text" id="med-form-dosage" required placeholder="e.g. 10" class="w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2 text-xs">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1" data-i18n="lbl_dosage_unit">Unit</label>
+            <select id="med-form-unit" class="w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3 py-2 text-xs">
+              <option value="mg">mg</option>
+              <option value="mcg">mcg</option>
+              <option value="g">g</option>
+              <option value="ml">ml</option>
+              <option value="IU">IU</option>
+              <option value="puffs">puffs</option>
+              <option value="drops">drops</option>
+              <option value="tablets">tablets</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1" data-i18n="lbl_route">Route</label>
+            <select id="med-form-route" class="w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3 py-2 text-xs">
+              <option value="Oral">Oral</option>
+              <option value="Inhalation">Inhalation</option>
+              <option value="Sublingual">Sublingual</option>
+              <option value="Topical">Topical</option>
+              <option value="Injection">Injection</option>
+              <option value="Ophthalmic">Ophthalmic (Eye)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1" data-i18n="lbl_category">Category</label>
+            <input type="text" id="med-form-category" placeholder="e.g. Blood Pressure, Diabetes" class="w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2 text-xs">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1" data-i18n="lbl_frequency">Frequency</label>
+            <select id="med-form-frequency" class="w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3 py-2 text-xs">
+              <option value="Once Daily">Once Daily</option>
+              <option value="Twice Daily">Twice Daily</option>
+              <option value="Three Times Daily">Three Times Daily</option>
+              <option value="Every 4-6 Hours">Every 4-6 Hours</option>
+              <option value="As Needed">As Needed</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2" data-i18n="lbl_schedule_slots">Schedule Time Slots *</label>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+            <label class="flex items-center space-x-2 border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700">
+              <input type="checkbox" name="med-slot" value="Morning" class="rounded text-brand-600 focus:ring-brand-500">
+              <span data-i18n="slot_morning">Morning</span>
+            </label>
+            <label class="flex items-center space-x-2 border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700">
+              <input type="checkbox" name="med-slot" value="Afternoon" class="rounded text-brand-600 focus:ring-brand-500">
+              <span data-i18n="slot_afternoon">Afternoon</span>
+            </label>
+            <label class="flex items-center space-x-2 border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700">
+              <input type="checkbox" name="med-slot" value="Evening" class="rounded text-brand-600 focus:ring-brand-500">
+              <span data-i18n="slot_evening">Evening</span>
+            </label>
+            <label class="flex items-center space-x-2 border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700">
+              <input type="checkbox" name="med-slot" value="Night" class="rounded text-brand-600 focus:ring-brand-500">
+              <span data-i18n="slot_night">Night</span>
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1" data-i18n="lbl_time_details">Specific Time Notes</label>
+          <input type="text" id="med-form-timedetails" placeholder="e.g. 8:00 AM & 8:00 PM with meals" class="w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2 text-xs">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1" data-i18n="lbl_start_date">Start Date</label>
+            <input type="date" id="med-form-startdate" class="w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2 text-xs">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1" data-i18n="lbl_end_date">End Date (Optional)</label>
+            <input type="date" id="med-form-enddate" class="w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2 text-xs">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1" data-i18n="lbl_instructions">Instructions / Notes</label>
+          <textarea id="med-form-instructions" rows="2" placeholder="e.g. Take with a full glass of water. Do not skip." class="w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2 text-xs"></textarea>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1" data-i18n="lbl_uses">Primary Uses / Purpose</label>
+            <input type="text" id="med-form-uses" placeholder="e.g. Lowers blood pressure" class="w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2 text-xs">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1" data-i18n="lbl_precautions">Precautions / Warnings</label>
+            <input type="text" id="med-form-precautions" placeholder="e.g. Avoid potassium supplements" class="w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2 text-xs">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1" data-i18n="lbl_storage">Storage Instructions</label>
+          <input type="text" id="med-form-storage" placeholder="e.g. Store at 20°C to 25°C away from moisture" class="w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2 text-xs">
+        </div>
+
+        <div class="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 p-3 rounded-xl flex items-start space-x-3">
+          <input type="checkbox" id="med-form-emergency" class="mt-1 rounded text-rose-600 focus:ring-rose-500">
+          <div>
+            <label for="med-form-emergency" class="text-xs font-bold text-rose-900 dark:text-rose-200 cursor-pointer" data-i18n="lbl_emergency_mark">Mark as Emergency Relevant</label>
+            <p class="text-[11px] text-rose-700 dark:text-rose-300 mt-0.5" data-i18n="lbl_emergency_desc">Includes this medication in the PIN-locked Emergency Vault screen for quick responder review.</p>
+          </div>
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-2 border-t border-slate-100 dark:border-slate-700">
+          <button type="button" onclick="app.closeModal('add-med-modal')" class="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl" data-i18n="cancel">Cancel</button>
+          <button type="submit" class="px-5 py-2 text-xs font-semibold bg-brand-600 hover:bg-brand-700 text-white rounded-xl shadow-sm" data-i18n="btn_save_med">Save Medication</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. Medicine Detail / Pharmacology Modal -->
+  <div id="medinfo-detail-modal" class="modal-backdrop fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-700 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-start border-b border-slate-100 dark:border-slate-700 pb-3">
+        <div>
+          <h3 class="text-base font-bold text-slate-900 dark:text-white" id="medinfo-modal-title">Medicine Details</h3>
+          <p class="text-xs text-slate-500 font-medium">Educational Reference & Pharmacology</p>
+        </div>
+        <button onclick="app.closeModal('medinfo-detail-modal')" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div id="medinfo-modal-content">
+        <!-- Injected via app.js -->
+      </div>
+
+      <div class="pt-3 border-t border-slate-100 dark:border-slate-700 flex justify-end">
+        <button onclick="app.closeModal('medinfo-detail-modal')" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl" data-i18n="close">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Change PIN Modal -->
+  <div id="change-pin-modal" class="modal-backdrop fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-700 space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-3">
+        <h3 class="text-base font-bold text-slate-900 dark:text-white" data-i18n="em_change_pin_btn">Change Emergency PIN</h3>
+        <button onclick="app.closeModal('change-pin-modal')" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form onsubmit="app.saveNewPin(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Current PIN *</label>
+          <input type="password" maxlength="6" id="pin-old" required placeholder="Enter current PIN" class="w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2 text-xs text-center font-mono">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">New 4–6 Digit PIN *</label>
+          <input type="password" maxlength="6" id="pin-new" required placeholder="New PIN" class="w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2 text-xs text-center font-mono">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Confirm New PIN *</label>
+          <input type="password" maxlength="6" id="pin-confirm" required placeholder="Confirm New PIN" class="w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2 text-xs text-center font-mono">
+        </div>
+
+        <div id="change-pin-msg" class="text-xs text-rose-600 font-semibold hidden"></div>
+
+        <div class="flex justify-end space-x-2 pt-2 border-t border-slate-100 dark:border-slate-700">
+          <button type="button" onclick="app.closeModal('change-pin-modal')" class="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300" data-i18n="cancel">Cancel</button>
+          <button type="submit" class="px-5 py-2 text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded-xl shadow-sm">Update PIN</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 4. Edit Emergency Profile Modal -->
+  <div id="edit-emergency-modal" class="modal-backdrop fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-700 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-3">
+        <h3 class="text-base font-bold text-slate-900 dark:text-white">Edit Emergency Profile</h3>
+        <button onclick="app.closeModal('edit-emergency-modal')" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form onsubmit="app.saveEmergencyProfile(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1" data-i18n="em_full_name">Full Name</label>
+          <input type="text" id="em-form-name" class="w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2 text-xs">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1" data-i18n="em_dob">Date of Birth</label>
+            <input type="date" id="em-form-dob" class="w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2 text-xs">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1" data-i18n="em_blood_type">Blood Type</label>
+            <input type="text" id="em-form-blood" placeholder="e.g. O+, A-" class="w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2 text-xs">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1" data-i18n="em_allergies">Known Allergies</label>
+          <input type="text" id="em-form-allergies" placeholder="e.g. Penicillin, Shellfish" class="w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2 text-xs">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Emergency Contacts (Name & Phone)</label>
+          <input type="text" id="em-form-contact1" placeholder="e.g. Mark Vance (Son) - (555) 987-6543" class="w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2 text-xs">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Attending Physician / Specialist</label>
+          <input type="text" id="em-form-doctor" placeholder="e.g. Dr. Sarah Jenkins - (555) 234-5678" class="w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2 text-xs">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Critical Emergency Notes</label>
+          <textarea id="em-form-notes" rows="3" class="w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2 text-xs"></textarea>
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-2 border-t border-slate-100 dark:border-slate-700">
+          <button type="button" onclick="app.closeModal('edit-emergency-modal')" class="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300" data-i18n="cancel">Cancel</button>
+          <button type="submit" class="px-5 py-2 text-xs font-semibold bg-brand-600 hover:bg-brand-700 text-white rounded-xl shadow-sm" data-i18n="save">Save Profile</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MOBILE BOTTOM BAR (Quick Navigation) -->
+  <nav id="mobile-bottom-nav" class="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-700 z-40 px-1.5 py-1 flex justify-around items-center print:hidden shadow-lg transition-colors">
+    <button onclick="app.switchTab('home')" data-tab="home" class="mobile-nav-btn flex flex-col items-center justify-center py-1 px-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition">
+      <i data-lucide="home" class="w-5 h-5"></i>
+      <span class="text-[10px] font-semibold mt-0.5" data-i18n="nav_home">Home</span>
+    </button>
+    <button onclick="app.switchTab('dashboard')" data-tab="dashboard" class="mobile-nav-btn flex flex-col items-center justify-center py-1 px-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition">
+      <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+      <span class="text-[10px] font-semibold mt-0.5" data-i18n="nav_dashboard">Dash</span>
+    </button>
+    <button onclick="app.switchTab('medications')" data-tab="medications" class="mobile-nav-btn flex flex-col items-center justify-center py-1 px-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition">
+      <i data-lucide="pill" class="w-5 h-5"></i>
+      <span class="text-[10px] font-semibold mt-0.5" data-i18n="nav_medications">Meds</span>
+    </button>
+    <button onclick="app.switchTab('emergency')" data-tab="emergency" class="mobile-nav-btn flex flex-col items-center justify-center py-1 px-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition">
+      <i data-lucide="shield-alert" class="w-5 h-5"></i>
+      <span class="text-[10px] font-semibold mt-0.5" data-i18n="nav_emergency">Vault</span>
+    </button>
+    <button onclick="app.switchTab('iot')" data-tab="iot" class="mobile-nav-btn flex flex-col items-center justify-center py-1 px-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition">
+      <i data-lucide="cpu" class="w-5 h-5"></i>
+      <span class="text-[10px] font-semibold mt-0.5" data-i18n="nav_iot">IoT Box</span>
+    </button>
+    <button onclick="app.toggleMobileDrawer()" class="mobile-nav-btn flex flex-col items-center justify-center py-1 px-2 rounded-lg text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition" aria-label="More navigation options">
+      <i data-lucide="menu" class="w-5 h-5"></i>
+      <span class="text-[10px] font-semibold mt-0.5">More</span>
+    </button>
+  </nav>
+
+  <!-- SCRIPTS ARCHITECTURE -->
+  <script src="translations.js"></script>
+  <script src="med-info-db.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
